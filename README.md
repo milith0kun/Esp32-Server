@@ -470,6 +470,13 @@ curl http://18.219.142.124:3000/api/stats
 
 MIT
 
-## Autor
+## Desarrolladores
 
-ESP32 Scanner Project
+Este proyecto fue desarrollado por:
+
+- **Axel Aranibar Rojas** - Código: 220547
+- **Edmil Jampier Saire Bustamante** - Código: 174449
+
+## Contacto
+
+ESP32 Scanner Project - 2025

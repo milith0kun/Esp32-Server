@@ -280,6 +280,13 @@ sudo systemctl restart pm2-ubuntu
 
 ---
 
+## 👥 Desarrolladores
+
+- **Axel Aranibar Rojas** - Código: 220547
+- **Edmil Jampier Saire Bustamante** - Código: 174449
+
+---
+
 **Proyecto**: ESP32 Scanner Server
 **Versión**: 1.0.0
 **Estado**: ✅ Producción

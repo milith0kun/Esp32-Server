@@ -20,6 +20,8 @@ Si es tu primera vez con el proyecto, lee en este orden:
 | **[README.md](README.md)** | Documentación principal completa | Desarrolladores | ⭐ Esencial |
 | **[GUIA_PM2.md](GUIA_PM2.md)** | Guía completa de comandos PM2 | Administradores | ⭐ Importante |
 | **[DEPLOYMENT.md](DEPLOYMENT.md)** | Guía de despliegue y mantenimiento | DevOps/Admins | ⭐ Importante |
+| **[GEOLOCALIZACION.md](GEOLOCALIZACION.md)** | Configurar ubicación GPS del ESP32 | Todos | ⭐ Importante |
+| **[CODIGO_ESP32.md](CODIGO_ESP32.md)** | Documentación completa del código ESP32 | Desarrolladores | ⭐ Importante |
 | **[ESPECIFICACIONES.md](ESPECIFICACIONES.md)** | Especificaciones técnicas detalladas | Desarrolladores | Referencia |
 | **[CONFIGURACION_MAPA.md](CONFIGURACION_MAPA.md)** | Configuración del mapa interactivo | Desarrolladores | Referencia |
 | **[INDICE_DOCUMENTACION.md](INDICE_DOCUMENTACION.md)** | Este archivo (índice maestro) | Todos | Navegación |
@@ -95,20 +97,25 @@ Si es tu primera vez con el proyecto, lee en este orden:
 
 ---
 
-### 🗺️ "Quiero configurar el mapa"
+### 🗺️ "El mapa muestra ubicación incorrecta"
 
-1. Lee: [CONFIGURACION_MAPA.md](CONFIGURACION_MAPA.md)
-2. Modifica coordenadas del ESP32 en `server.js`:
+⚠️ **PROBLEMA COMÚN**: El mapa marca en Cusco, Perú por defecto.
+
+1. Lee: [GEOLOCALIZACION.md](GEOLOCALIZACION.md) - **⭐ IMPORTANTE**
+2. Obtén las coordenadas GPS reales de donde está tu ESP32
+3. Modifica coordenadas del ESP32 en `server.js`:
    ```javascript
    let esp32Location = {
-     latitude: -13.5226,
-     longitude: -71.9674,
+     latitude: -16.4090,    // ← TU LATITUD REAL
+     longitude: -71.5375,   // ← TU LONGITUD REAL
      name: 'ESP32 Scanner'
    };
    ```
-3. Reinicia: `pm2 restart esp32-scanner`
+4. Reinicia: `pm2 restart esp32-scanner`
+5. Verifica: http://18.219.142.124:3000/mapa
 
 **Documentos relevantes:**
+- [GEOLOCALIZACION.md](GEOLOCALIZACION.md) ⭐
 - [CONFIGURACION_MAPA.md](CONFIGURACION_MAPA.md)
 - [README.md](README.md#interfaz-web)
 
@@ -186,7 +193,11 @@ Documentación/
 │   ├── GUIA_PM2.md                   # Gestión con PM2
 │   └── DEPLOYMENT.md                 # Despliegue y mantenimiento
 │
+├── 📍 Configuración
+│   └── GEOLOCALIZACION.md            # Configurar ubicación GPS
+│
 └── 💻 Desarrollo
+    ├── CODIGO_ESP32.md               # Código del ESP32
     ├── ESPECIFICACIONES.md           # Especificaciones técnicas
     └── CONFIGURACION_MAPA.md         # Configuración del mapa
 ```
@@ -221,7 +232,8 @@ Documentación/
 - [ESPECIFICACIONES.md#formato-de-datos](ESPECIFICACIONES.md#formato-de-datos)
 - [RESUMEN.md#configuración-del-esp32](RESUMEN.md#configuración-del-esp32)
 
-### Mapa Interactivo
+### Mapa Interactivo y Geolocalización
+- [GEOLOCALIZACION.md](GEOLOCALIZACION.md) ⭐
 - [CONFIGURACION_MAPA.md](CONFIGURACION_MAPA.md)
 - [README.md#interfaz-web](README.md#interfaz-web)
 
@@ -280,13 +292,22 @@ Marca los documentos que ya has leído:
 - [ ] [README.md](README.md)
 - [ ] [GUIA_PM2.md](GUIA_PM2.md)
 - [ ] [DEPLOYMENT.md](DEPLOYMENT.md)
+- [ ] [GEOLOCALIZACION.md](GEOLOCALIZACION.md) ⭐
+- [ ] [CODIGO_ESP32.md](CODIGO_ESP32.md) ⭐
 - [ ] [ESPECIFICACIONES.md](ESPECIFICACIONES.md)
 - [ ] [CONFIGURACION_MAPA.md](CONFIGURACION_MAPA.md)
 - [x] [INDICE_DOCUMENTACION.md](INDICE_DOCUMENTACION.md) ← Estás aquí
 
 ---
 
+## 👥 Desarrolladores
+
+- **Axel Aranibar Rojas** - Código: 220547
+- **Edmil Jampier Saire Bustamante** - Código: 174449
+
+---
+
 **Última actualización**: 2025-11-27
 **Versión del proyecto**: 1.0.0
-**Total de documentos**: 7
+**Total de documentos**: 8
 
