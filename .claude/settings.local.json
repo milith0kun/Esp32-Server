@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo systemctl status:*)",
+      "Bash(netstat:*)",
+      "Bash(ss:*)",
+      "Bash(curl:*)",
+      "Bash(python3 -m json.tool:*)",
+      "Bash(sudo ufw status:*)",
+      "Bash(pkill:*)",
+      "Bash(python3:*)",
+      "Bash(sudo npm install:*)",
+      "Bash(pm2 start:*)",
+      "Bash(pm2 save:*)",
+      "Bash(sudo pm2 startup:*)",
+      "Bash(pm2 status:*)",
+      "Bash(pm2 logs:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

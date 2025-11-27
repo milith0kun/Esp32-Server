@@ -25,11 +25,22 @@ Sistema completo de monitoreo para ESP32 que detecta redes WiFi y dispositivos B
 
 ```
 esp32-scanner/
-├── package.json
-├── server.js
-├── public/
-│   └── index.html
-└── README.md
+├── package.json              # Dependencias del proyecto
+├── package-lock.json         # Lock de dependencias
+├── server.js                 # Servidor Express principal
+├── ecosystem.config.js       # Configuración de PM2
+├── esp32-scanner.service     # Archivo de servicio systemd (alternativo)
+├── public/                   # Archivos estáticos
+│   ├── index.html           # Interfaz web principal
+│   └── mapa.html            # Visualización de mapa
+├── logs/                     # Logs de PM2
+│   ├── combined.log         # Logs combinados
+│   ├── out.log              # Logs de salida estándar
+│   └── err.log              # Logs de error
+├── README.md                 # Documentación principal
+├── ESPECIFICACIONES.md       # Especificaciones técnicas
+├── CONFIGURACION_MAPA.md     # Configuración del mapa
+└── .gitignore               # Archivos ignorados por Git
 ```
 
 ## Instalación
@@ -41,7 +52,32 @@ cd ~/esp32-scanner
 npm install
 ```
 
-### 2. Iniciar el servidor manualmente
+### 2. Instalar PM2 (recomendado para producción)
+
+```bash
+sudo npm install -g pm2
+```
+
+### 3. Iniciar el servidor
+
+#### Con PM2 (recomendado)
+
+```bash
+# Iniciar el servidor
+pm2 start ecosystem.config.js
+
+# Guardar la configuración
+pm2 save
+
+# Configurar PM2 para inicio automático al reiniciar el sistema
+sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu
+```
+
+El servidor estará disponible en:
+- Local: http://localhost:3000
+- Público: http://18.219.142.124:3000
+
+#### Manualmente (solo para desarrollo)
 
 ```bash
 npm start
@@ -53,21 +89,84 @@ O directamente con Node:
 node server.js
 ```
 
-El servidor estará disponible en:
-- Local: http://localhost:3000
-- Público: http://18.219.142.124:3000
+## Gestión del Servidor con PM2
 
-## Configuración como Servicio Systemd
+PM2 es un gestor de procesos para aplicaciones Node.js que mantiene el servidor ejecutándose 24/7.
 
-Para que el servidor se inicie automáticamente con el sistema:
+### Comandos básicos de PM2
 
-### 1. Crear archivo de servicio
+```bash
+# Ver estado de todos los procesos
+pm2 status
+
+# Ver estado detallado
+pm2 show esp32-scanner
+
+# Ver logs en tiempo real
+pm2 logs esp32-scanner
+
+# Ver logs (últimas 100 líneas)
+pm2 logs esp32-scanner --lines 100
+
+# Reiniciar el servidor
+pm2 restart esp32-scanner
+
+# Detener el servidor
+pm2 stop esp32-scanner
+
+# Iniciar el servidor
+pm2 start ecosystem.config.js
+
+# Eliminar el proceso de PM2
+pm2 delete esp32-scanner
+
+# Ver monitoreo en tiempo real (CPU, memoria)
+pm2 monit
+```
+
+### Ubicación de logs
+
+Los logs se guardan en:
+- Logs combinados: `./logs/combined.log`
+- Logs de salida: `./logs/out.log`
+- Logs de errores: `./logs/err.log`
+
+```bash
+# Ver logs del archivo directamente
+tail -f logs/combined.log
+```
+
+### Auto-inicio con el sistema
+
+PM2 está configurado para iniciarse automáticamente cuando se reinicia el servidor.
+
+```bash
+# Verificar que el auto-inicio esté configurado
+systemctl status pm2-ubuntu
+
+# Si necesitas reconfigurarlo
+sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu
+pm2 save
+```
+
+## Configuración Alternativa: Systemd
+
+Si prefieres usar systemd en lugar de PM2:
+
+### 1. Detener PM2 primero
+
+```bash
+pm2 stop esp32-scanner
+pm2 delete esp32-scanner
+```
+
+### 2. Crear archivo de servicio
 
 ```bash
 sudo nano /etc/systemd/system/esp32-scanner.service
 ```
 
-### 2. Agregar el siguiente contenido:
+### 3. Agregar el siguiente contenido:
 
 ```ini
 [Unit]
@@ -90,34 +189,13 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 ```
 
-### 3. Habilitar y iniciar el servicio
+### 4. Habilitar y iniciar el servicio
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable esp32-scanner
 sudo systemctl start esp32-scanner
-```
-
-### 4. Verificar estado del servicio
-
-```bash
 sudo systemctl status esp32-scanner
-```
-
-### 5. Otros comandos útiles
-
-```bash
-# Detener el servicio
-sudo systemctl stop esp32-scanner
-
-# Reiniciar el servicio
-sudo systemctl restart esp32-scanner
-
-# Ver logs del servicio
-sudo journalctl -u esp32-scanner -f
-
-# Ver logs recientes
-sudo journalctl -u esp32-scanner -n 100
 ```
 
 ## API Endpoints

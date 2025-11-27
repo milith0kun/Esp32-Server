@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Scanner - Mapa de Dispositivos</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            position: absolute;
+            top: 90px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .stats {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-size: 13px;
+        }
+
+        .stat-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .esp32-icon { background: #ff4444; }
+        .wifi-icon { background: #4444ff; }
+        .ble-icon { background: #44ff44; }
+
+        .legend {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-size: 12px;
+        }
+
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        /* Estilos para los popups */
+        .custom-popup {
+            font-size: 13px;
+        }
+
+        .popup-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .popup-info {
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗺️ ESP32 Scanner - Mapa en Tiempo Real</h1>
+        <p>Visualización de dispositivos WiFi y BLE detectados</p>
+    </div>
+
+    <div class="controls">
+        <button onclick="refreshMap()">🔄 Actualizar Mapa</button>
+        <button onclick="centerMap()">📍 Centrar ESP32</button>
+        <button onclick="toggleWiFi()">📡 WiFi ON</button>
+        <button onclick="toggleBLE()">🔵 BLE ON</button>
+        <button onclick="window.location.href='/'">🏠 Dashboard</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-icon esp32-icon"></div>
+            <span>ESP32: <strong id="esp32Count">0</strong></span>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon wifi-icon"></div>
+            <span>WiFi: <strong id="wifiCount">0</strong></span>
+        </div>
+        <div class="stat-item">
+            <div class="stat-icon ble-icon"></div>
+            <span>BLE: <strong id="bleCount">0</strong></span>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-title">Leyenda</div>
+        <div class="legend-item">
+            <div class="stat-icon esp32-icon"></div>
+            <span>ESP32 (rojo)</span>
+        </div>
+        <div class="legend-item">
+            <div class="stat-icon wifi-icon"></div>
+            <span>Red WiFi (azul)</span>
+        </div>
+        <div class="legend-item">
+            <div class="stat-icon ble-icon"></div>
+            <span>Dispositivo BLE (verde)</span>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        let map;
+        let esp32Marker;
+        let wifiMarkers = [];
+        let bleMarkers = [];
+        let wifiVisible = true;
+        let bleVisible = true;
+        let esp32Location = { lat: -13.5226, lng: -71.9674 };
+
+        // Inicializar mapa
+        function initMap() {
+            map = L.map('map').setView([esp32Location.lat, esp32Location.lng], 16);
+
+            // Usar OpenStreetMap (gratis, sin API key)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            refreshMap();
+
+            // Auto-refresh cada 10 segundos
+            setInterval(refreshMap, 10000);
+        }
+
+        async function refreshMap() {
+            try {
+                const response = await fetch('/api/map-data');
+                const data = await response.json();
+
+                if (!data.success) {
+                    console.log('No hay datos disponibles');
+                    return;
+                }
+
+                // Limpiar marcadores anteriores
+                clearMarkers();
+
+                // Ubicación del ESP32
+                if (data.esp32Location) {
+                    esp32Location = {
+                        lat: parseFloat(data.esp32Location.latitude),
+                        lng: parseFloat(data.esp32Location.longitude)
+                    };
+
+                    // Marcador ESP32 (rojo)
+                    const esp32Icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background: #ff4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [30, 30]
+                    });
+
+                    esp32Marker = L.marker([esp32Location.lat, esp32Location.lng], { icon: esp32Icon })
+                        .addTo(map)
+                        .bindPopup(`
+                            <div class="custom-popup">
+                                <div class="popup-title">📡 ${data.esp32Location.name}</div>
+                                <div class="popup-info">Lat: ${esp32Location.lat.toFixed(6)}</div>
+                                <div class="popup-info">Lng: ${esp32Location.lng.toFixed(6)}</div>
+                                <div class="popup-info">Última actualización: ${data.timestamp || 'N/A'}</div>
+                            </div>
+                        `);
+
+                    // Círculo de cobertura
+                    L.circle([esp32Location.lat, esp32Location.lng], {
+                        color: '#ff4444',
+                        fillColor: '#ff4444',
+                        fillOpacity: 0.1,
+                        radius: 100 // 100 metros de radio
+                    }).addTo(map);
+                }
+
+                // Dispositivos WiFi (azul)
+                if (data.wifi && data.wifi.length > 0) {
+                    data.wifi.forEach(wifi => {
+                        if (wifi.latitude && wifi.longitude) {
+                            const wifiIcon = L.divIcon({
+                                className: 'custom-marker',
+                                html: `<div style="background: #4444ff; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                                iconSize: [20, 20]
+                            });
+
+                            const marker = L.marker([parseFloat(wifi.latitude), parseFloat(wifi.longitude)], { icon: wifiIcon })
+                                .bindPopup(`
+                                    <div class="custom-popup">
+                                        <div class="popup-title">📡 ${wifi.ssid || '(Oculta)'}</div>
+                                        <div class="popup-info">MAC: ${wifi.bssid}</div>
+                                        <div class="popup-info">RSSI: ${wifi.rssi} dBm</div>
+                                        <div class="popup-info">Canal: ${wifi.channel}</div>
+                                        <div class="popup-info">Distancia: ${wifi.distance} m</div>
+                                        <div class="popup-info">Seguridad: ${wifi.encryption}</div>
+                                    </div>
+                                `);
+
+                            if (wifiVisible) {
+                                marker.addTo(map);
+                            }
+                            wifiMarkers.push(marker);
+                        }
+                    });
+                }
+
+                // Dispositivos BLE (verde)
+                if (data.ble && data.ble.length > 0) {
+                    data.ble.forEach(ble => {
+                        if (ble.latitude && ble.longitude) {
+                            const bleIcon = L.divIcon({
+                                className: 'custom-marker',
+                                html: `<div style="background: #44ff44; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                                iconSize: [20, 20]
+                            });
+
+                            const marker = L.marker([parseFloat(ble.latitude), parseFloat(ble.longitude)], { icon: bleIcon })
+                                .bindPopup(`
+                                    <div class="custom-popup">
+                                        <div class="popup-title">🔵 ${ble.name || '(Desconocido)'}</div>
+                                        <div class="popup-info">MAC: ${ble.address}</div>
+                                        <div class="popup-info">Tipo: ${ble.type}</div>
+                                        <div class="popup-info">RSSI: ${ble.rssi} dBm</div>
+                                        <div class="popup-info">Distancia: ${ble.distance} m</div>
+                                    </div>
+                                `);
+
+                            if (bleVisible) {
+                                marker.addTo(map);
+                            }
+                            bleMarkers.push(marker);
+                        }
+                    });
+                }
+
+                // Actualizar estadísticas
+                document.getElementById('esp32Count').textContent = '1';
+                document.getElementById('wifiCount').textContent = data.wifi ? data.wifi.length : 0;
+                document.getElementById('bleCount').textContent = data.ble ? data.ble.length : 0;
+
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+            }
+        }
+
+        function clearMarkers() {
+            wifiMarkers.forEach(marker => map.removeLayer(marker));
+            bleMarkers.forEach(marker => map.removeLayer(marker));
+            wifiMarkers = [];
+            bleMarkers = [];
+        }
+
+        function centerMap() {
+            if (esp32Marker) {
+                map.setView([esp32Location.lat, esp32Location.lng], 16);
+            }
+        }
+
+        function toggleWiFi() {
+            wifiVisible = !wifiVisible;
+            wifiMarkers.forEach(marker => {
+                if (wifiVisible) {
+                    marker.addTo(map);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+            event.target.textContent = wifiVisible ? '📡 WiFi ON' : '📡 WiFi OFF';
+        }
+
+        function toggleBLE() {
+            bleVisible = !bleVisible;
+            bleMarkers.forEach(marker => {
+                if (bleVisible) {
+                    marker.addTo(map);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+            event.target.textContent = bleVisible ? '🔵 BLE ON' : '🔵 BLE OFF';
+        }
+
+        // Iniciar al cargar
+        window.onload = initMap;
+    </script>
+</body>
+</html>

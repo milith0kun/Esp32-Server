@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Scanner - Monitor de Redes WiFi y BLE</title>
+    <title>ESP32 Scanner - Monitor Avanzado WiFi & BLE</title>
     <style>
         * {
             margin: 0;
@@ -11,22 +11,38 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #f56565;
+            --info: #4299e1;
+            --dark: #2d3748;
+            --light: #f7fafc;
+            --gray: #a0aec0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             min-height: 100vh;
             padding: 20px;
+            color: var(--dark);
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
+        /* Header */
         .header {
             text-align: center;
             color: white;
             margin-bottom: 30px;
+            animation: fadeIn 0.5s ease-in;
         }
 
         .header h1 {
@@ -40,11 +56,13 @@
             opacity: 0.9;
         }
 
+        /* Controls */
         .controls {
             display: flex;
             justify-content: center;
             gap: 15px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -52,15 +70,15 @@
             border: none;
             border-radius: 8px;
             font-size: 1rem;
-            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-weight: 600;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .btn-primary {
             background: white;
-            color: #667eea;
+            color: var(--primary);
         }
 
         .btn-primary:hover {
@@ -68,9 +86,21 @@
             box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
 
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: var(--primary);
+        }
+
+        /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -78,8 +108,8 @@
         .stat-card {
             background: white;
             border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
         }
 
@@ -88,91 +118,172 @@
         }
 
         .stat-card h3 {
-            color: #666;
             font-size: 0.9rem;
-            text-transform: uppercase;
+            color: var(--gray);
             margin-bottom: 10px;
-            letter-spacing: 1px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .stat-card .value {
             font-size: 2.5rem;
             font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary);
         }
 
-        .content-grid {
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(255,255,255,0.4);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Device Grid */
+        .devices-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 20px;
             margin-bottom: 20px;
         }
 
-        .section {
+        .device-card {
             background: white;
             border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .section-header h2 {
-            font-size: 1.5rem;
-            color: #333;
-        }
-
-        .badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .device-list {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        .device-card {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
         }
 
         .device-card:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
 
-        .device-name {
+        .device-card.ble-device {
+            border-left-color: var(--info);
+        }
+
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .device-title {
+            flex: 1;
+        }
+
+        .device-title h3 {
             font-size: 1.1rem;
+            color: var(--dark);
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
+
+        .device-title p {
+            font-size: 0.85rem;
+            color: var(--gray);
+            font-family: 'Courier New', monospace;
+        }
+
+        .device-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge-wifi {
+            background: #e6f7ff;
+            color: var(--primary);
+        }
+
+        .badge-ble {
+            background: #e1f5fe;
+            color: var(--info);
+        }
+
+        .badge-type {
+            background: #f0f0f0;
+            color: var(--dark);
+            margin-left: 5px;
         }
 
         .device-info {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            font-size: 0.9rem;
-            color: #666;
+            margin-bottom: 15px;
         }
 
         .info-item {
@@ -180,363 +291,794 @@
             flex-direction: column;
         }
 
-        .info-label {
+        .info-item label {
             font-size: 0.75rem;
+            color: var(--gray);
             text-transform: uppercase;
-            color: #999;
             margin-bottom: 3px;
+            letter-spacing: 0.5px;
         }
 
-        .info-value {
+        .info-item value {
+            font-size: 0.95rem;
             font-weight: 600;
-            color: #333;
+            color: var(--dark);
         }
 
-        .signal-indicator {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 600;
+        /* RSSI Signal Bar */
+        .rssi-bar {
+            margin-top: 15px;
         }
 
-        .signal-excellent {
-            background: #d4edda;
-            color: #155724;
+        .rssi-bar label {
+            font-size: 0.75rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: block;
         }
 
-        .signal-good {
-            background: #d1ecf1;
-            color: #0c5460;
+        .rssi-progress {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 5px;
         }
 
-        .signal-fair {
-            background: #fff3cd;
-            color: #856404;
+        .rssi-progress-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
         }
 
-        .signal-weak {
-            background: #f8d7da;
-            color: #721c24;
+        .rssi-excellent { background: var(--success); }
+        .rssi-good { background: var(--info); }
+        .rssi-fair { background: var(--warning); }
+        .rssi-poor { background: var(--danger); }
+
+        .rssi-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--gray);
         }
 
-        .distance {
+        /* Detection Count */
+        .detection-badge {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 4px 10px;
-            background: #e7f3ff;
-            color: #0066cc;
-            border-radius: 4px;
-            font-weight: 600;
+            padding: 5px 10px;
+            background: #f7fafc;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            margin-top: 10px;
         }
 
+        .detection-badge strong {
+            color: var(--primary);
+        }
+
+        /* Timeline */
+        .timeline {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: var(--gray);
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .timeline div {
+            margin-bottom: 3px;
+        }
+
+        /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 40px;
-            color: #999;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .empty-state svg {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 15px;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
             opacity: 0.3;
         }
 
-        .last-update {
-            text-align: center;
-            color: white;
-            font-size: 0.9rem;
-            margin-top: 20px;
-            opacity: 0.8;
+        .empty-state h3 {
+            color: var(--dark);
+            margin-bottom: 10px;
         }
 
+        .empty-state p {
+            color: var(--gray);
+        }
+
+        /* Loading */
         .loading {
             text-align: center;
-            padding: 20px;
-            color: #667eea;
-            font-weight: 600;
+            padding: 40px;
+            color: white;
+            font-size: 1.2rem;
         }
 
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Detail Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .modal-header h2 {
+            color: var(--dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: var(--danger);
+        }
+
+        /* Chart */
+        .chart-container {
+            margin-top: 20px;
+            height: 200px;
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8rem;
-            }
-
-            .content-grid {
-                grid-template-columns: 1fr;
             }
 
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .stat-card .value {
-                font-size: 2rem;
+            .devices-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .device-info {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                min-width: auto;
             }
         }
 
-        /* Scrollbar personalizado */
-        .device-list::-webkit-scrollbar {
-            width: 8px;
+        /* Status Indicator */
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
         }
 
-        .device-list::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
+        .status-online {
+            background: var(--success);
         }
 
-        .device-list::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
+        .status-offline {
+            background: var(--gray);
         }
 
-        .device-list::-webkit-scrollbar-thumb:hover {
-            background: #764ba2;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Last Update */
+        .last-update {
+            text-align: center;
+            color: white;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1>ESP32 Scanner Monitor</h1>
-            <p>Monitoreo en tiempo real de redes WiFi y dispositivos BLE</p>
+            <h1>ESP32 Scanner - Monitor Avanzado</h1>
+            <p>Detección en tiempo real de redes WiFi y dispositivos BLE</p>
         </div>
 
+        <!-- Controls -->
         <div class="controls">
-            <button class="btn btn-primary" onclick="loadData()">Actualizar Datos</button>
+            <button class="btn btn-primary" onclick="refreshData()">
+                <span id="refresh-icon">🔄</span> Actualizar Ahora
+            </button>
+            <button class="btn btn-secondary" onclick="toggleAutoRefresh()">
+                <span id="auto-refresh-status">⏸️ Pausar</span> Auto-Refresh
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='/mapa'">
+                🗺️ Ver Mapa
+            </button>
+            <button class="btn btn-secondary" onclick="clearAllData()">
+                🗑️ Limpiar Datos
+            </button>
         </div>
 
-        <div class="stats-grid">
+        <!-- Last Update -->
+        <div class="last-update">
+            <span class="status-indicator status-online"></span>
+            Última actualización: <span id="last-update-time">--</span>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="stats-grid">
             <div class="stat-card">
-                <h3>Total Dispositivos</h3>
-                <div class="value" id="total-devices">0</div>
+                <h3>Total Escaneos</h3>
+                <div class="value" id="stat-scans">0</div>
+                <div class="label">Ciclos completados</div>
             </div>
             <div class="stat-card">
-                <h3>Redes WiFi</h3>
-                <div class="value" id="total-wifi">0</div>
+                <h3>Dispositivos WiFi</h3>
+                <div class="value" id="stat-wifi">0</div>
+                <div class="label">Redes únicas detectadas</div>
             </div>
             <div class="stat-card">
                 <h3>Dispositivos BLE</h3>
-                <div class="value" id="total-ble">0</div>
+                <div class="value" id="stat-ble">0</div>
+                <div class="label">Dispositivos únicos detectados</div>
             </div>
             <div class="stat-card">
-                <h3>Total Escaneos</h3>
-                <div class="value" id="total-scans">0</div>
+                <h3>Total Único</h3>
+                <div class="value" id="stat-unique">0</div>
+                <div class="label">Dispositivos rastreados</div>
             </div>
         </div>
 
-        <div class="content-grid">
-            <div class="section">
-                <div class="section-header">
-                    <h2>Redes WiFi</h2>
-                    <span class="badge" id="wifi-count">0</span>
-                </div>
-                <div class="device-list" id="wifi-list">
-                    <div class="loading">Cargando datos...</div>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="section-header">
-                    <h2>Dispositivos BLE</h2>
-                    <span class="badge" id="ble-count">0</span>
-                </div>
-                <div class="device-list" id="ble-list">
-                    <div class="loading">Cargando datos...</div>
-                </div>
-            </div>
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('all')">Todos los Dispositivos</button>
+            <button class="tab" onclick="switchTab('wifi')">Redes WiFi</button>
+            <button class="tab" onclick="switchTab('ble')">Dispositivos BLE</button>
+            <button class="tab" onclick="switchTab('latest')">Último Escaneo</button>
         </div>
 
-        <div class="last-update" id="last-update">
-            Esperando datos...
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="🔍 Buscar por nombre, MAC, SSID, BSSID..." onkeyup="filterDevices()">
+        </div>
+
+        <!-- Tab: All Devices -->
+        <div id="tab-all" class="tab-content active">
+            <div class="devices-grid" id="all-devices-grid"></div>
+        </div>
+
+        <!-- Tab: WiFi -->
+        <div id="tab-wifi" class="tab-content">
+            <div class="devices-grid" id="wifi-devices-grid"></div>
+        </div>
+
+        <!-- Tab: BLE -->
+        <div id="tab-ble" class="tab-content">
+            <div class="devices-grid" id="ble-devices-grid"></div>
+        </div>
+
+        <!-- Tab: Latest Scan -->
+        <div id="tab-latest" class="tab-content">
+            <div id="latest-scan-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal for Device Details -->
+    <div id="device-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Detalles del Dispositivo</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-body"></div>
         </div>
     </div>
 
     <script>
+        // Configuration
         const API_BASE = window.location.origin;
-        let autoRefreshInterval;
+        let autoRefreshEnabled = true;
+        let autoRefreshInterval = null;
+        let currentTab = 'all';
+        let allDevices = [];
+        let wifiDevices = [];
+        let bleDevices = [];
 
-        // Determinar calidad de señal
-        function getSignalQuality(rssi) {
-            if (rssi >= -50) return { class: 'signal-excellent', text: 'Excelente' };
-            if (rssi >= -60) return { class: 'signal-good', text: 'Buena' };
-            if (rssi >= -70) return { class: 'signal-fair', text: 'Regular' };
-            return { class: 'signal-weak', text: 'Débil' };
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshData();
+            startAutoRefresh();
+        });
+
+        // Start auto-refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(refreshData, 5000);
         }
 
-        // Renderizar lista WiFi
-        function renderWiFiList(networks) {
-            const container = document.getElementById('wifi-list');
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const statusElement = document.getElementById('auto-refresh-status');
 
-            if (!networks || networks.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-                        </svg>
-                        <p>No hay redes WiFi detectadas</p>
-                    </div>
-                `;
-                return;
+            if (autoRefreshEnabled) {
+                statusElement.textContent = '⏸️ Pausar';
+                startAutoRefresh();
+            } else {
+                statusElement.textContent = '▶️ Reanudar';
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
             }
-
-            const html = networks.map(network => {
-                const signal = getSignalQuality(network.rssi);
-                return `
-                    <div class="device-card">
-                        <div class="device-name">${network.ssid || 'Red Oculta'}</div>
-                        <div class="device-info">
-                            <div class="info-item">
-                                <span class="info-label">BSSID</span>
-                                <span class="info-value">${network.bssid}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Canal</span>
-                                <span class="info-value">${network.channel}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Señal</span>
-                                <span class="signal-indicator ${signal.class}">
-                                    ${network.rssi} dBm (${signal.text})
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Distancia</span>
-                                <span class="distance">📍 ${network.distance} m</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Seguridad</span>
-                                <span class="info-value">${network.encryption}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = html;
         }
 
-        // Renderizar lista BLE
-        function renderBLEList(devices) {
-            const container = document.getElementById('ble-list');
+        // Refresh all data
+        async function refreshData() {
+            const icon = document.getElementById('refresh-icon');
+            icon.style.transform = 'rotate(360deg)';
+            icon.style.transition = 'transform 0.5s ease';
 
-            if (!devices || devices.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <svg fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zm0 16a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
-                        </svg>
-                        <p>No hay dispositivos BLE detectados</p>
-                    </div>
-                `;
-                return;
-            }
+            setTimeout(() => {
+                icon.style.transform = 'rotate(0deg)';
+            }, 500);
 
-            const html = devices.map(device => {
-                const signal = getSignalQuality(device.rssi);
-                return `
-                    <div class="device-card">
-                        <div class="device-name">${device.name || 'Dispositivo desconocido'}</div>
-                        <div class="device-info">
-                            <div class="info-item">
-                                <span class="info-label">Dirección</span>
-                                <span class="info-value">${device.address}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Tipo</span>
-                                <span class="info-value">${device.type || 'Desconocido'}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Señal</span>
-                                <span class="signal-indicator ${signal.class}">
-                                    ${device.rssi} dBm (${signal.text})
-                                </span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Distancia</span>
-                                <span class="distance">📍 ${device.distance} m</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = html;
-        }
-
-        // Actualizar estadísticas
-        function updateStats(data) {
-            if (!data) return;
-
-            const wifiCount = data.wifi?.length || 0;
-            const bleCount = data.ble?.length || 0;
-            const totalDevices = wifiCount + bleCount;
-
-            document.getElementById('wifi-count').textContent = wifiCount;
-            document.getElementById('ble-count').textContent = bleCount;
-        }
-
-        // Cargar datos del servidor
-        async function loadData() {
             try {
-                // Obtener último escaneo
-                const scanResponse = await fetch(`${API_BASE}/api/scans/latest`);
-                const scanData = await scanResponse.json();
-
-                // Obtener estadísticas
+                // Fetch stats
                 const statsResponse = await fetch(`${API_BASE}/api/stats`);
                 const statsData = await statsResponse.json();
+                updateStats(statsData.data);
 
-                if (scanData.success && scanData.data) {
-                    const scan = scanData.data;
-
-                    // Actualizar listas
-                    renderWiFiList(scan.wifi);
-                    renderBLEList(scan.ble);
-
-                    // Actualizar contador de badges
-                    updateStats(scan);
-
-                    // Actualizar timestamp
-                    const timestamp = new Date(scan.receivedAt).toLocaleString('es-ES');
-                    document.getElementById('last-update').textContent =
-                        `Última actualización: ${timestamp} | Escaneo #${scan.scanNumber || 'N/A'}`;
-                } else {
-                    renderWiFiList([]);
-                    renderBLEList([]);
-                    document.getElementById('last-update').textContent =
-                        'No hay datos disponibles';
+                // Fetch devices based on current tab
+                if (currentTab === 'all' || currentTab === 'wifi') {
+                    const wifiResponse = await fetch(`${API_BASE}/api/devices/wifi`);
+                    const wifiData = await wifiResponse.json();
+                    wifiDevices = wifiData.data || [];
                 }
 
-                // Actualizar estadísticas globales
-                if (statsData.success && statsData.data) {
-                    const stats = statsData.data;
-                    document.getElementById('total-devices').textContent = stats.totalDevices;
-                    document.getElementById('total-wifi').textContent = stats.totalWiFi;
-                    document.getElementById('total-ble').textContent = stats.totalBLE;
-                    document.getElementById('total-scans').textContent = stats.totalScans;
+                if (currentTab === 'all' || currentTab === 'ble') {
+                    const bleResponse = await fetch(`${API_BASE}/api/devices/ble`);
+                    const bleData = await bleResponse.json();
+                    bleDevices = bleData.data || [];
                 }
+
+                if (currentTab === 'all') {
+                    allDevices = [
+                        ...wifiDevices.map(d => ({ ...d, deviceType: 'wifi' })),
+                        ...bleDevices.map(d => ({ ...d, deviceType: 'ble' }))
+                    ];
+                    allDevices.sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
+                }
+
+                // Update displays
+                renderDevices();
+                updateLastUpdateTime();
 
             } catch (error) {
-                console.error('Error cargando datos:', error);
-                document.getElementById('last-update').textContent =
-                    'Error al cargar datos del servidor';
+                console.error('Error refreshing data:', error);
             }
         }
 
-        // Iniciar auto-refresh
-        function startAutoRefresh() {
-            // Cargar datos inmediatamente
-            loadData();
-
-            // Configurar refresh cada 5 segundos
-            autoRefreshInterval = setInterval(loadData, 5000);
+        // Update stats
+        function updateStats(stats) {
+            document.getElementById('stat-scans').textContent = stats.totalScans || 0;
+            document.getElementById('stat-wifi').textContent = stats.uniqueWiFi || 0;
+            document.getElementById('stat-ble').textContent = stats.uniqueBLE || 0;
+            document.getElementById('stat-unique').textContent = (stats.uniqueWiFi || 0) + (stats.uniqueBLE || 0);
         }
 
-        // Iniciar cuando la página carga
-        document.addEventListener('DOMContentLoaded', startAutoRefresh);
+        // Update last update time
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES');
+            document.getElementById('last-update-time').textContent = timeString;
+        }
+
+        // Switch tab
+        function switchTab(tabName) {
+            currentTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Render content
+            if (tabName === 'latest') {
+                loadLatestScan();
+            } else {
+                refreshData();
+            }
+        }
+
+        // Render devices
+        function renderDevices() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+            if (currentTab === 'all') {
+                renderDeviceGrid(allDevices, 'all-devices-grid', searchTerm);
+            } else if (currentTab === 'wifi') {
+                renderDeviceGrid(wifiDevices.map(d => ({ ...d, deviceType: 'wifi' })), 'wifi-devices-grid', searchTerm);
+            } else if (currentTab === 'ble') {
+                renderDeviceGrid(bleDevices.map(d => ({ ...d, deviceType: 'ble' })), 'ble-devices-grid', searchTerm);
+            }
+        }
+
+        // Render device grid
+        function renderDeviceGrid(devices, gridId, searchTerm = '') {
+            const grid = document.getElementById(gridId);
+
+            // Filter devices
+            let filtered = devices;
+            if (searchTerm) {
+                filtered = devices.filter(device => {
+                    const searchableText = [
+                        device.ssid,
+                        device.bssid,
+                        device.name,
+                        device.address,
+                        device.type
+                    ].filter(Boolean).join(' ').toLowerCase();
+
+                    return searchableText.includes(searchTerm);
+                });
+            }
+
+            // Render
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <h3>No hay dispositivos</h3>
+                        <p>${searchTerm ? 'No se encontraron resultados para tu búsqueda' : 'Esperando datos del ESP32...'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(device => {
+                if (device.deviceType === 'wifi') {
+                    return renderWiFiCard(device);
+                } else {
+                    return renderBLECard(device);
+                }
+            }).join('');
+        }
+
+        // Render WiFi card
+        function renderWiFiCard(device) {
+            const rssiInfo = getRSSIInfo(device.avgRssi || device.rssiHistory[device.rssiHistory.length - 1]?.rssi || -100);
+            const timeSinceLastSeen = getTimeSince(device.lastSeen);
+
+            return `
+                <div class="device-card">
+                    <div class="device-header">
+                        <div class="device-title">
+                            <h3>${device.ssid || '(Red Oculta)'}</h3>
+                            <p>${device.bssid}</p>
+                        </div>
+                        <span class="device-badge badge-wifi">WiFi</span>
+                    </div>
+
+                    <div class="device-info">
+                        <div class="info-item">
+                            <label>Canal</label>
+                            <value>${device.channel || 'N/A'}</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Seguridad</label>
+                            <value>${device.encryption || 'N/A'}</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Distancia Aprox.</label>
+                            <value>${device.rssiHistory[device.rssiHistory.length - 1]?.distance || 'N/A'} m</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Detecciones</label>
+                            <value>${device.detectionCount}</value>
+                        </div>
+                    </div>
+
+                    <div class="rssi-bar">
+                        <label>Señal (RSSI)</label>
+                        <div class="rssi-progress">
+                            <div class="rssi-progress-bar rssi-${rssiInfo.quality}" style="width: ${rssiInfo.percentage}%"></div>
+                        </div>
+                        <div class="rssi-details">
+                            <span>${rssiInfo.label}</span>
+                            <span>${device.avgRssi} dBm</span>
+                        </div>
+                    </div>
+
+                    <div class="timeline">
+                        <div><strong>Primera detección:</strong> ${formatDate(device.firstSeen)}</div>
+                        <div><strong>Última detección:</strong> ${timeSinceLastSeen}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render BLE card
+        function renderBLECard(device) {
+            const rssiInfo = getRSSIInfo(device.avgRssi || device.rssiHistory[device.rssiHistory.length - 1]?.rssi || -100);
+            const timeSinceLastSeen = getTimeSince(device.lastSeen);
+
+            return `
+                <div class="device-card ble-device">
+                    <div class="device-header">
+                        <div class="device-title">
+                            <h3>${device.name || '(Desconocido)'}</h3>
+                            <p>${device.address}</p>
+                        </div>
+                        <div>
+                            <span class="device-badge badge-ble">BLE</span>
+                            ${device.type ? `<span class="device-badge badge-type">${device.type}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="device-info">
+                        <div class="info-item">
+                            <label>Tipo</label>
+                            <value>${device.type || 'Genérico'}</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Distancia Aprox.</label>
+                            <value>${device.rssiHistory[device.rssiHistory.length - 1]?.distance || 'N/A'} m</value>
+                        </div>
+                        <div class="info-item">
+                            <label>Detecciones</label>
+                            <value>${device.detectionCount}</value>
+                        </div>
+                        <div class="info-item">
+                            <label>RSSI Promedio</label>
+                            <value>${device.avgRssi} dBm</value>
+                        </div>
+                    </div>
+
+                    <div class="rssi-bar">
+                        <label>Señal (RSSI)</label>
+                        <div class="rssi-progress">
+                            <div class="rssi-progress-bar rssi-${rssiInfo.quality}" style="width: ${rssiInfo.percentage}%"></div>
+                        </div>
+                        <div class="rssi-details">
+                            <span>${rssiInfo.label}</span>
+                            <span>Min: ${device.minRssi} | Max: ${device.maxRssi} dBm</span>
+                        </div>
+                    </div>
+
+                    <div class="timeline">
+                        <div><strong>Primera detección:</strong> ${formatDate(device.firstSeen)}</div>
+                        <div><strong>Última detección:</strong> ${timeSinceLastSeen}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load latest scan
+        async function loadLatestScan() {
+            try {
+                const response = await fetch(`${API_BASE}/api/scans/latest`);
+                const data = await response.json();
+
+                const container = document.getElementById('latest-scan-content');
+
+                if (!data.data) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No hay escaneos disponibles</h3>
+                            <p>Esperando el primer escaneo del ESP32...</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const scan = data.data;
+                const wifiCount = scan.wifi?.length || 0;
+                const bleCount = scan.ble?.length || 0;
+
+                container.innerHTML = `
+                    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <h3 style="margin-bottom: 15px; color: var(--dark);">Información del Escaneo</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div><strong>ESP32 ID:</strong> ${scan.deviceId}</div>
+                            <div><strong>Scan #:</strong> ${scan.scanNumber}</div>
+                            <div><strong>Redes WiFi:</strong> ${wifiCount}</div>
+                            <div><strong>Dispositivos BLE:</strong> ${bleCount}</div>
+                            <div><strong>Recibido:</strong> ${formatDate(scan.receivedAt)}</div>
+                        </div>
+                    </div>
+
+                    <h3 style="color: white; margin-bottom: 15px;">Redes WiFi Detectadas (${wifiCount})</h3>
+                    <div class="devices-grid">
+                        ${(scan.wifi || []).map(wifi => `
+                            <div class="device-card">
+                                <h4>${wifi.ssid || '(Oculta)'}</h4>
+                                <p style="font-family: monospace; font-size: 0.85rem; color: var(--gray);">${wifi.bssid}</p>
+                                <div style="margin-top: 10px;">
+                                    <div>RSSI: ${wifi.rssi} dBm</div>
+                                    <div>Canal: ${wifi.channel}</div>
+                                    <div>Distancia: ${wifi.distance} m</div>
+                                    <div>Seguridad: ${wifi.encryption}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <h3 style="color: white; margin: 20px 0 15px;">Dispositivos BLE Detectados (${bleCount})</h3>
+                    <div class="devices-grid">
+                        ${(scan.ble || []).map(ble => `
+                            <div class="device-card ble-device">
+                                <h4>${ble.name || '(Desconocido)'}</h4>
+                                <p style="font-family: monospace; font-size: 0.85rem; color: var(--gray);">${ble.address}</p>
+                                <div style="margin-top: 10px;">
+                                    <div>Tipo: ${ble.type}</div>
+                                    <div>RSSI: ${ble.rssi} dBm</div>
+                                    <div>Distancia: ${ble.distance} m</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading latest scan:', error);
+            }
+        }
+
+        // Filter devices
+        function filterDevices() {
+            renderDevices();
+        }
+
+        // Clear all data
+        async function clearAllData() {
+            if (!confirm('¿Estás seguro de que quieres limpiar todos los datos?')) {
+                return;
+            }
+
+            // This would require a DELETE endpoint on the server
+            alert('Funcionalidad de limpieza aún no implementada en el servidor');
+        }
+
+        // Get RSSI info
+        function getRSSIInfo(rssi) {
+            rssi = parseInt(rssi);
+
+            if (rssi >= -50) {
+                return { quality: 'excellent', label: 'Excelente', percentage: 100 };
+            } else if (rssi >= -60) {
+                return { quality: 'good', label: 'Buena', percentage: 75 };
+            } else if (rssi >= -70) {
+                return { quality: 'fair', label: 'Regular', percentage: 50 };
+            } else {
+                return { quality: 'poor', label: 'Débil', percentage: 25 };
+            }
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // Get time since
+        function getTimeSince(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return `Hace ${seconds} segundos`;
+            if (seconds < 3600) return `Hace ${Math.floor(seconds / 60)} minutos`;
+            if (seconds < 86400) return `Hace ${Math.floor(seconds / 3600)} horas`;
+            return `Hace ${Math.floor(seconds / 86400)} días`;
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('device-modal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('device-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
     </script>
 </body>
 </html>
